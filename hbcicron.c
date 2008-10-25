@@ -36,19 +36,33 @@ main (int argc, char **argv)
   AB_ACCOUNT *a;
   GWEN_GUI *gui;
 
-  if (argc != 2
+  if (argc != 3
       || strcmp (argv[1], "--help") == 0
       || strcmp (argv[1], "-h") == 0) {
-    fprintf (stderr, "Usage: hbcicron ACCOUNT\n"
-	     "List HBCI transactions and current balance of ACCOUNT.\n\n");
+    fprintf (stderr, "Usage: hbcicron ACCOUNT PINFILE\n"
+	     "List HBCI transactions and current balance of ACCOUNT.  Read the"
+	     "pincode to use from PINFILE.\n\n");
     return 0;
   }
+
+  const char *accountId = argv[1];
+  const char *pinFile = argv[2];
 
   gui = GWEN_Gui_CGui_new ();
   GWEN_Gui_SetGui (gui);
   GWEN_Gui_CGui_SetCharSet (gui, "ISO-8859-15");
 
   ab = AB_Banking_new ("hbcicron", 0, 0);
+
+  GWEN_DB_NODE *dbPins = GWEN_DB_Group_new ("pins");
+  if (GWEN_DB_ReadFile (dbPins, pinFile, GWEN_DB_FLAGS_DEFAULT
+			| GWEN_PATH_FLAGS_CREATE_GROUP, 0, 20000))
+    {
+      fprintf (stderr, "Error reading pinfile \"%s\"", pinFile);
+      return 2;
+    }
+
+  GWEN_Gui_CGui_SetPasswordDb (gui, dbPins, 1);
 
   if ((rv = AB_Banking_Init (ab)))
     {
@@ -63,7 +77,7 @@ main (int argc, char **argv)
       return 2;
     }
 
-  if ((a = AB_Banking_FindAccount (ab, "aqhbci", "de", "*", argv[1])))
+  if ((a = AB_Banking_FindAccount (ab, "aqhbci", "de", "*", accountId)))
     {
       AB_JOB_LIST2 *jl;
       AB_JOB *j;
