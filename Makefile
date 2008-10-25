@@ -5,4 +5,4 @@ all: hbcicron
 hbcicron: hbcicron.o
 
 clean:
-	rm -f hbcicron *.o
+	rm -f hbcicron *.o *~
