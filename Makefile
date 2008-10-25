@@ -1,5 +1,5 @@
 LDFLAGS := $(shell aqbanking-config --libraries)
-CFLAGS := $(shell aqbanking-config --includes)
+CFLAGS := $(shell aqbanking-config --includes) -Wall -W
 
 all: hbcicron
 hbcicron: hbcicron.o

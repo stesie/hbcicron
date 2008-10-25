@@ -27,6 +27,15 @@
 #include <aqbanking/banking.h>
 #include <gwenhywfar/cgui.h>
 #include <aqbanking/jobgettransactions.h>
+#include <aqbanking/jobgetbalance.h>
+
+#define dumpBalance(t,b)						\
+  do {									\
+    if (!b) break;							\
+    const AB_VALUE *v = AB_Balance_GetValue (b);			\
+    printf (t "%9.2f %s\n", AB_Value_GetValueAsDouble (v),		\
+	    AB_Value_GetCurrency (v));					\
+  } while(0)
 
 
 const char *
@@ -38,11 +47,45 @@ StringList_to_Char(const GWEN_STRINGLIST *sl)
     return "";
 }
 
+
 void
 GwenTime_to_Char(const GWEN_TIME *t, char *buf, int len)
 {
   GWEN_BUFFER *gbuf = GWEN_Buffer_new (buf, len, 0, 0);
   GWEN_Time_toString (t, "DD.MM.YYYY", gbuf);
+}
+
+
+AB_ACCOUNT_STATUS *
+getLastAccountStatus (AB_IMEXPORTER_ACCOUNTINFO *iea)
+{
+  AB_ACCOUNT_STATUS *lastAst = NULL;
+  const GWEN_TIME *lastTi = NULL;
+  AB_ACCOUNT_STATUS *ast = NULL;
+
+  ast = AB_ImExporterAccountInfo_GetFirstAccountStatus (iea);
+  while (ast)
+    {
+      const GWEN_TIME *ti;
+
+      if (lastAst && lastTi && (ti = AB_AccountStatus_GetTime (ast)))
+	{
+	  if (GWEN_Time_Diff (ti, lastTi) > 0)
+	    {
+	      lastAst = ast;
+	      lastTi = ti;
+	    }
+	}
+      else
+	{
+	  lastAst = ast;
+	  lastTi = AB_AccountStatus_GetTime (ast);
+	}
+
+      ast = AB_ImExporterAccountInfo_GetNextAccountStatus (iea);
+    }
+
+  return lastAst;
 }
 
 
@@ -117,17 +160,23 @@ main (int argc, char **argv)
 
       /* create a job which retrieves transaction statements. */
       j = AB_JobGetTransactions_new (a);
-
-      /* This function checks whether the given job is available with the
-         backend/provider to which the account involved is assigned. */
-      rv = AB_Job_CheckAvailability (j, 0);
-      if (rv)
+      if ((rv = AB_Job_CheckAvailability (j, 0)))
 	{
-	  fprintf (stderr, "Job is not available (%d)\n", rv);
+	  fprintf (stderr, "Job 'Get Transactions' is not available.\n");
 	  return 2;
 	}
 
       jl = AB_Job_List2_new ();
+      AB_Job_List2_PushBack (jl, j);
+
+      /* create a job which retrieves the current balance. */
+      j = AB_JobGetBalance_new (a);
+      if ((rv = AB_Job_CheckAvailability (j, 0)))
+	{
+	  fprintf (stderr, "Job 'Get Balance' is not available.\n");
+	  return 2;
+	}
+
       AB_Job_List2_PushBack (jl, j);
 
       ctx = AB_ImExporterContext_new ();
@@ -145,8 +194,12 @@ main (int argc, char **argv)
 	  ai = AB_ImExporterContext_GetFirstAccountInfo (ctx);
 	  while (ai)
 	    {
-	      const AB_TRANSACTION *t;
+	      AB_ACCOUNT_STATUS *ast = getLastAccountStatus (ai);
+	      dumpBalance ("Booked Balance: ",
+			   AB_AccountStatus_GetBookedBalance (ast));
+	      putchar ('\n');
 
+	      const AB_TRANSACTION *t;
 	      t = AB_ImExporterAccountInfo_GetFirstTransaction (ai);
 	      while (t)
 		{
