@@ -46,6 +46,7 @@ main (int argc, char **argv)
 
   gui = GWEN_Gui_CGui_new ();
   GWEN_Gui_SetGui (gui);
+  GWEN_Gui_CGui_SetCharSet (gui, "ISO-8859-15");
 
   ab = AB_Banking_new ("hbcicron", 0, 0);
 
