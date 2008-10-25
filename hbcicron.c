@@ -36,31 +36,33 @@ main (int argc, char **argv)
   AB_ACCOUNT *a;
   GWEN_GUI *gui;
 
+  if (argc != 2
+      || strcmp (argv[1], "--help") == 0
+      || strcmp (argv[1], "-h") == 0) {
+    fprintf (stderr, "Usage: hbcicron ACCOUNT\n"
+	     "List HBCI transactions and current balance of ACCOUNT.\n\n");
+    return 0;
+  }
+
   gui = GWEN_Gui_CGui_new ();
   GWEN_Gui_SetGui (gui);
 
   ab = AB_Banking_new ("hbcicron", 0, 0);
 
-  rv = AB_Banking_Init (ab);
-  if (rv)
+  if ((rv = AB_Banking_Init (ab)))
     {
       fprintf (stderr, "Error on init (%d)\n", rv);
       return 2;
     }
   fprintf (stderr, "AqBanking successfully initialized.\n");
 
-  rv = AB_Banking_OnlineInit (ab);
-  if (rv)
+  if ((rv = AB_Banking_OnlineInit (ab)))
     {
       fprintf (stderr, "Error on init of online modules (%d)\n", rv);
       return 2;
     }
 
-  a = AB_Banking_FindAccount (ab, "aqhbci",	/* backend name */
-			      "de",	/* two-char ISO country code */
-			      "*",	/* bank code (with wildcard) */
-			      "17620");	/* account number (wildcard) */
-  if (a)
+  if ((a = AB_Banking_FindAccount (ab, "aqhbci", "de", "*", argv[1])))
     {
       AB_JOB_LIST2 *jl;
       AB_JOB *j;
