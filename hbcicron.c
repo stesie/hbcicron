@@ -36,17 +36,19 @@ main (int argc, char **argv)
   AB_ACCOUNT *a;
   GWEN_GUI *gui;
 
-  if (argc != 3
+  if (argc != 4
       || strcmp (argv[1], "--help") == 0
       || strcmp (argv[1], "-h") == 0) {
-    fprintf (stderr, "Usage: hbcicron ACCOUNT PINFILE\n"
+    fprintf (stderr, "Usage: hbcicron ACCOUNT PINFILE CERTFILE\n"
 	     "List HBCI transactions and current balance of ACCOUNT.  Read the"
-	     "pincode to use from PINFILE.\n\n");
+	     "pincode to use\nfrom PINFILE and store the list of known "
+	     "certificates in CERTFLIE.\n\n");
     return 0;
   }
 
   const char *accountId = argv[1];
   const char *pinFile = argv[2];
+  const char *certFile = argv[3];
 
   gui = GWEN_Gui_CGui_new ();
   GWEN_Gui_SetGui (gui);
@@ -61,8 +63,20 @@ main (int argc, char **argv)
       fprintf (stderr, "Error reading pinfile \"%s\"", pinFile);
       return 2;
     }
+  else
+    GWEN_Gui_CGui_SetPasswordDb (gui, dbPins, 1);
 
-  GWEN_Gui_CGui_SetPasswordDb (gui, dbPins, 1);
+  GWEN_DB_NODE *dbCerts = GWEN_DB_Group_new ("certs");
+  if (GWEN_DB_ReadFile (dbCerts, certFile, GWEN_DB_FLAGS_DEFAULT
+			| GWEN_PATH_FLAGS_CREATE_GROUP, 0, 20000))
+    {
+      fprintf (stderr, "Error reading certificates database \"%s\".\n",
+	       certFile);
+      /* Ignoring, probably non-critical, will exist next time around. */
+    }
+  else
+    GWEN_Gui_CGui_SetCertDb (gui, dbCerts);
+
 
   if ((rv = AB_Banking_Init (ab)))
     {
@@ -149,6 +163,16 @@ main (int argc, char **argv)
       fprintf (stderr, "No account found.\n");
     }
 
+  /* Dump the list of accepted certificates to file. */
+  dbCerts = GWEN_Gui_CGui_GetCertDb (gui);
+  if (GWEN_DB_WriteFile (dbCerts, certFile, GWEN_DB_FLAGS_DEFAULT, 0, 20000))
+    {
+      fprintf (stderr, "Error writing certificates database \"%s\".\n",
+	       certFile);
+      return 2;
+    }
+
+  /* Shutdown AqBanking library. */
   rv = AB_Banking_OnlineFini (ab);
   if (rv)
     {
