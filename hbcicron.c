@@ -28,6 +28,24 @@
 #include <gwenhywfar/cgui.h>
 #include <aqbanking/jobgettransactions.h>
 
+
+const char *
+StringList_to_Char(const GWEN_STRINGLIST *sl)
+{
+  if (sl)
+    return GWEN_StringList_FirstString (sl);
+  else
+    return "";
+}
+
+void
+GwenTime_to_Char(const GWEN_TIME *t, char *buf, int len)
+{
+  GWEN_BUFFER *gbuf = GWEN_Buffer_new (buf, len, 0, 0);
+  GWEN_Time_toString (t, "DD.MM.YYYY", gbuf);
+}
+
+
 int
 main (int argc, char **argv)
 {
@@ -137,19 +155,17 @@ main (int argc, char **argv)
 		  v = AB_Transaction_GetValue (t);
 		  if (v)
 		    {
-		      const GWEN_STRINGLIST *sl;
-		      const char *purpose;
+		      const char *remote = StringList_to_Char
+			(AB_Transaction_GetRemoteName (t));
+		      const char *purpose = StringList_to_Char
+			(AB_Transaction_GetPurpose (t));
 
-		      sl = AB_Transaction_GetPurpose (t);
-		      if (sl)
-			purpose = GWEN_StringList_FirstString (sl);
-		      else
-			purpose = "";
+		      char date[20];
+		      GwenTime_to_Char (AB_Transaction_GetDate (t), date, 20);
 
-		      fprintf (stderr, " %-32s (%.2lf %s)\n",
-			       purpose,
-			       AB_Value_GetValueAsDouble (v),
-			       AB_Value_GetCurrency (v));
+		      printf ("%s: %9.2f %s %s, %s\n",
+			      date, AB_Value_GetValueAsDouble (v),
+			      AB_Value_GetCurrency (v), remote, purpose);
 		    }
 		  t = AB_ImExporterAccountInfo_GetNextTransaction (ai);
 		}
