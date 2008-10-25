@@ -101,7 +101,7 @@ main (int argc, char **argv)
       || strcmp (argv[1], "--help") == 0
       || strcmp (argv[1], "-h") == 0) {
     fprintf (stderr, "Usage: hbcicron ACCOUNT PINFILE CERTFILE\n"
-	     "List HBCI transactions and current balance of ACCOUNT.  Read the"
+	     "List HBCI transactions and current balance of ACCOUNT.  Read the "
 	     "pincode to use\nfrom PINFILE and store the list of known "
 	     "certificates in CERTFLIE.\n\n");
     return 0;
@@ -121,7 +121,7 @@ main (int argc, char **argv)
   if (GWEN_DB_ReadFile (dbPins, pinFile, GWEN_DB_FLAGS_DEFAULT
 			| GWEN_PATH_FLAGS_CREATE_GROUP, 0, 20000))
     {
-      fprintf (stderr, "Error reading pinfile \"%s\"", pinFile);
+      fprintf (stderr, "Error reading pinfile \"%s\".\n", pinFile);
       return 2;
     }
   else
@@ -197,7 +197,6 @@ main (int argc, char **argv)
 	      AB_ACCOUNT_STATUS *ast = getLastAccountStatus (ai);
 	      dumpBalance ("Booked Balance: ",
 			   AB_AccountStatus_GetBookedBalance (ast));
-	      putchar ('\n');
 
 	      const AB_TRANSACTION *t;
 	      t = AB_ImExporterAccountInfo_GetFirstTransaction (ai);
