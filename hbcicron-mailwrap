@@ -1,6 +1,7 @@
 #! /bin/sh
 HBCICRON=hbcicron
 ROOTDIR=$HOME/.hbcicron
+SUBJECT="hbcicron"
 
 if [ "x$1" = "x" -o "x$1" = "x--help" -o "x$1" = "x-h" ]; then
   echo "Usage: hbcicron-mailwrap ACCOUNT MAILADDR"
@@ -49,11 +50,20 @@ diff -u "$ROOTDIR/$ACCOUNT.old" "$ROOTDIR/$ACCOUNT.new" \
   | grep -e "^\+" > "$ROOTDIR/$ACCOUNT.diff"
 
 if test -s "$ROOTDIR/$ACCOUNT.diff"; then
- (echo "Neue Transaktionen: "
-  cat "$ROOTDIR/$ACCOUNT.diff"
-  echo ""
-  line < "$STDOUT" # Display the balance first.
- ) | mail -s "hbcicron" "$MAILADDR"
+  MAIL="`mktemp`"
+  (echo "Neue Transaktionen: "
+   cat "$ROOTDIR/$ACCOUNT.diff"
+   echo ""
+   line < "$STDOUT" # Display the balance first.
+  ) > "$MAIL"
+
+  if gpg --batch --finger "$MAILADDR" > /dev/null 2> /dev/null; then
+    gpg --armor --encrypt --batch -r "$MAILADDR" < "$MAIL" | mail -s "$SUBJECT" "$MAILADDR"
+  else
+    mail -s "$SUBJECT" "$MAILADDR" < "$MAIL"
+  fi
+
+  rm -f "$MAIL"
 fi
 
 rm -f "$ROOTDIR/$ACCOUNT.diff"
