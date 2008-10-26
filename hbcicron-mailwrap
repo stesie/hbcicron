@@ -24,14 +24,12 @@ test -s "$ROOTDIR/pincode" || {
   exit 1
 }
 
-test -s "$ROOTDIR/certs" || {
+test -e "$ROOTDIR/certs" || {
   echo "$ROOTDIR/certs doesn't exist.  Running hbcitool interactivly"
   echo "so you can happily accept the certificate."
   echo ""
-  $HBCICRON "$ACCOUNT" "$ROOTDIR/pincode" "$ROOTDIR/certs"
-  test -s "$ROOTDIR/certs" || exit 2
+  $HBCICRON "$ACCOUNT" "$ROOTDIR/pincode" "$ROOTDIR/certs" || exit 2
   echo ""
-  echo "... hbcicron has generated the certs file."
   echo "Trying to run it in batch-mode now."
 }
 
@@ -62,4 +60,3 @@ rm -f "$ROOTDIR/$ACCOUNT.diff"
 mv -f "$ROOTDIR/$ACCOUNT.new" "$ROOTDIR/$ACCOUNT.old"
 
 rm -f "$STDOUT"
-
