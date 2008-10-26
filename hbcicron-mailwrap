@@ -1,0 +1,65 @@
+#! /bin/sh
+HBCICRON=hbcicron
+ROOTDIR=$HOME/.hbcicron
+
+if [ "x$1" = "x" -o "x$1" = "x--help" -o "x$1" = "x-h" ]; then
+  echo "Usage: hbcicron-mailwrap ACCOUNT MAILADDR"
+  echo ""
+  exit 1
+fi
+
+ACCOUNT="$1"
+MAILADDR="$2"
+
+STDOUT="`mktemp`"
+STDERR="`mktemp`"
+
+mkdir -p "$ROOTDIR"
+
+test -s "$ROOTDIR/pincode" || {
+  echo "$ROOTDIR/pincode doesn't exist.  Creating one for you."
+  aqhbci-tool3 mkpinlist -o "$ROOTDIR/pincode"
+  echo ""
+  echo "Now enter your HBCI pincode in '$ROOTDIR/pincode' and come back."
+  exit 1
+}
+
+test -s "$ROOTDIR/certs" || {
+  echo "$ROOTDIR/certs doesn't exist.  Running hbcitool interactivly"
+  echo "so you can happily accept the certificate."
+  echo ""
+  $HBCICRON "$ACCOUNT" "$ROOTDIR/pincode" "$ROOTDIR/certs"
+  test -s "$ROOTDIR/certs" || exit 2
+  echo ""
+  echo "... hbcicron has generated the certs file."
+  echo "Trying to run it in batch-mode now."
+}
+
+$HBCICRON "$ACCOUNT" "$ROOTDIR/pincode" "$ROOTDIR/certs" > "$STDOUT" 2> "$STDERR" || {
+  echo $HBCICRON failed:
+  cat "$STDERR"
+  rm -f "$STDOUT" "$STDERR"
+  exit 1
+}
+
+rm -f "$STDERR"
+
+touch "$ROOTDIR/$ACCOUNT.old"
+sed -e '1d' "$STDOUT" > "$ROOTDIR/$ACCOUNT.new"
+
+diff -u "$ROOTDIR/$ACCOUNT.old" "$ROOTDIR/$ACCOUNT.new" \
+  | grep -e "^\+" > "$ROOTDIR/$ACCOUNT.diff"
+
+if test -s "$ROOTDIR/$ACCOUNT.diff"; then
+ (echo "Neue Transaktionen: "
+  cat "$ROOTDIR/$ACCOUNT.diff"
+  echo ""
+  line < "$STDOUT" # Display the balance first.
+ ) | mail -s "hbcicron" "$MAILADDR"
+fi
+
+rm -f "$ROOTDIR/$ACCOUNT.diff"
+mv -f "$ROOTDIR/$ACCOUNT.new" "$ROOTDIR/$ACCOUNT.old"
+
+rm -f "$STDOUT"
+
