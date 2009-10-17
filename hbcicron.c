@@ -146,7 +146,7 @@ main (int argc, char **argv)
     }
   fprintf (stderr, "AqBanking successfully initialized.\n");
 
-  if ((rv = AB_Banking_OnlineInit (ab)))
+  if ((rv = AB_Banking_OnlineInit (ab, 23)))
     {
       fprintf (stderr, "Error on init of online modules (%d)\n", rv);
       return 2;
@@ -241,7 +241,7 @@ main (int argc, char **argv)
     }
 
   /* Shutdown AqBanking library. */
-  rv = AB_Banking_OnlineFini (ab);
+  rv = AB_Banking_OnlineFini (ab, 23);
   if (rv)
     {
       fprintf (stderr, "ERROR: Error on deinit online modules (%d)\n", rv);
