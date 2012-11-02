@@ -119,7 +119,7 @@ main (int argc, char **argv)
 
   GWEN_DB_NODE *dbPins = GWEN_DB_Group_new ("pins");
   if (GWEN_DB_ReadFile (dbPins, pinFile, GWEN_DB_FLAGS_DEFAULT
-			| GWEN_PATH_FLAGS_CREATE_GROUP, 0, 20000))
+			| GWEN_PATH_FLAGS_CREATE_GROUP))
     {
       fprintf (stderr, "Error reading pinfile \"%s\".\n", pinFile);
       return 2;
@@ -129,7 +129,7 @@ main (int argc, char **argv)
 
   GWEN_DB_NODE *dbCerts = GWEN_DB_Group_new ("certs");
   if (GWEN_DB_ReadFile (dbCerts, certFile, GWEN_DB_FLAGS_DEFAULT
-			| GWEN_PATH_FLAGS_CREATE_GROUP, 0, 20000))
+			| GWEN_PATH_FLAGS_CREATE_GROUP))
     {
       fprintf (stderr, "Error reading certificates database \"%s\".\n",
 	       certFile);
@@ -146,13 +146,13 @@ main (int argc, char **argv)
     }
   fprintf (stderr, "AqBanking successfully initialized.\n");
 
-  if ((rv = AB_Banking_OnlineInit (ab, 23)))
+  if ((rv = AB_Banking_OnlineInit (ab)))
     {
       fprintf (stderr, "Error on init of online modules (%d)\n", rv);
       return 2;
     }
 
-  if ((a = AB_Banking_FindAccount (ab, "aqhbci", "de", "*", accountId)))
+  if ((a = AB_Banking_FindAccount (ab, "aqhbci", "de", "*", accountId, "*")))
     {
       AB_JOB_LIST2 *jl;
       AB_JOB *j;
@@ -160,7 +160,7 @@ main (int argc, char **argv)
 
       /* create a job which retrieves transaction statements. */
       j = AB_JobGetTransactions_new (a);
-      if ((rv = AB_Job_CheckAvailability (j, 0)))
+      if ((rv = AB_Job_CheckAvailability (j)))
 	{
 	  fprintf (stderr, "Job 'Get Transactions' is not available.\n");
 	  return 2;
@@ -171,7 +171,7 @@ main (int argc, char **argv)
 
       /* create a job which retrieves the current balance. */
       j = AB_JobGetBalance_new (a);
-      if ((rv = AB_Job_CheckAvailability (j, 0)))
+      if ((rv = AB_Job_CheckAvailability (j)))
 	{
 	  fprintf (stderr, "Job 'Get Balance' is not available.\n");
 	  return 2;
@@ -181,7 +181,7 @@ main (int argc, char **argv)
 
       ctx = AB_ImExporterContext_new ();
 
-      rv = AB_Banking_ExecuteJobs (ab, jl, ctx, 0);
+      rv = AB_Banking_ExecuteJobs (ab, jl, ctx);
       if (rv)
 	{
 	  fprintf (stderr, "Error on executeQueue (%d)\n", rv);
@@ -233,7 +233,7 @@ main (int argc, char **argv)
 
   /* Dump the list of accepted certificates to file. */
   dbCerts = GWEN_Gui_CGui_GetCertDb (gui);
-  if (GWEN_DB_WriteFile (dbCerts, certFile, GWEN_DB_FLAGS_DEFAULT, 0, 20000))
+  if (GWEN_DB_WriteFile (dbCerts, certFile, GWEN_DB_FLAGS_DEFAULT))
     {
       fprintf (stderr, "Error writing certificates database \"%s\".\n",
 	       certFile);
@@ -241,7 +241,7 @@ main (int argc, char **argv)
     }
 
   /* Shutdown AqBanking library. */
-  rv = AB_Banking_OnlineFini (ab, 23);
+  rv = AB_Banking_OnlineFini (ab);
   if (rv)
     {
       fprintf (stderr, "ERROR: Error on deinit online modules (%d)\n", rv);

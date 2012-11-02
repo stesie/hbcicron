@@ -19,7 +19,7 @@ mkdir -p "$ROOTDIR"
 
 test -s "$ROOTDIR/pincode" || {
   echo "$ROOTDIR/pincode doesn't exist.  Creating one for you."
-  aqhbci-tool3 mkpinlist -o "$ROOTDIR/pincode"
+  aqhbci-tool4 mkpinlist -o "$ROOTDIR/pincode"
   echo ""
   echo "Now enter your HBCI pincode in '$ROOTDIR/pincode' and come back."
   exit 1
